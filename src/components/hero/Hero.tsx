@@ -1,8 +1,8 @@
 import * as React from "react";
 import { motion } from "motion/react";
-import svgPaths from "../../imports/svg-ilj46y8dkr";
-import imgLeft from "../../assets/arrow.png";
-import imgRight from "../../assets/rectangular.png";
+import svgPaths from "@/lib/svg-paths";
+import imgLeft from "@/assets/arrow.png";
+import imgRight from "@/assets/rectangular.png";
 
 function Component6707B2F6B2693143A102E7CbGraphTextSvgFill() {
   return <div className="h-[443.67px] shrink-0 w-[188.73px]" data-name="6707b2f6b2693143a102e7cb_graph-text.svg fill" />;
