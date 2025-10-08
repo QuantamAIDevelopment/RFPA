@@ -10,6 +10,14 @@ import plusIcon from "./assets/plus.png";
 import minusSvg from "./assets/mines.svg";
 import { Download } from "lucide-react";
 import { AiLoader } from "./components/ui/ai-loader";
+import { fileUploadHandler } from "./services/fileUpload";
+import { apiService } from "./services/api";
+import Footer from "./components/layout/Footer";
+import Nav from "./components/layout/Nav";
+import ErrorBanner from "./components/common/ErrorBanner";
+import FileUploadSection from "./components/upload/FileUploadSection";
+import Hero from "./components/hero/Hero";
+import FAQ from "./components/faq/FAQ";
 
 function Component6707B2F6B2693143A102E7CbGraphTextSvgFill() {
   return <div className="h-[443.67px] shrink-0 w-[188.73px]" data-name="6707b2f6b2693143a102e7cb_graph-text.svg fill" />;
@@ -449,35 +457,7 @@ function HeroSection({ onUploadClick, isLoading, isUploaded }: HeroSectionProps)
   );
 }
 
-function Container7({ onUploadClick, isLoading, isUploaded }: HeroSectionProps) {
-  return (
-    <div className="absolute box-border content-stretch flex flex-col h-[328.694px] items-start left-[147px] pb-[1.695px] pt-[52.557px] px-[52.557px] rounded-[14.835px] top-[155.81px] w-[846px]" data-name="Container">
-      <div aria-hidden="true" className="absolute border-[1.695px] border-[rgba(255,255,255,0.5)] border-solid inset-0 pointer-events-none rounded-[14.835px]" />
-      <HeroSection onUploadClick={onUploadClick} isLoading={isLoading} isUploaded={isUploaded} />
-    </div>
-  );
-}
-
-interface DivExtensionsSlideshowProps extends HeroSectionProps {
-  isPageLoaded: boolean;
-}
-
-function DivExtensionsSlideshowImgContainer3RllO({ onUploadClick, isLoading, isUploaded, isPageLoaded }: DivExtensionsSlideshowProps) {
-  return (
-    <motion.div 
-      className="absolute h-[640px] left-[calc(50%-2px)] overflow-clip rounded-[16px] top-[1025px] translate-x-[-50%] w-[1140px]" 
-      data-name="div.ExtensionsSlideshow_imgContainer__3RllO"
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: isPageLoaded ? 1 : 0, y: isPageLoaded ? 0 : 40 }}
-      transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-    >
-      <div className="absolute inset-0 opacity-80 overflow-hidden pointer-events-none rounded-[16px]">
-        <img alt="" className="absolute left-0 max-w-none size-full top-0" src={imgDivExtensionsSlideshowImgContainer3RllO} />
-      </div>
-      <Container7 onUploadClick={onUploadClick} isLoading={isLoading} isUploaded={isUploaded} />
-    </motion.div>
-  );
-}
+// Upload section is now extracted to components/upload/FileUploadSection
 
 function Icon2() {
   return (
@@ -798,60 +778,16 @@ function Group12({ openFaq, setOpenFaq, isLoaded }: Group12Props) {
   );
 }
 
-function Group3() {
-  return (
-    <div className="relative shrink-0">
-      <img src={allvyLogo} alt="ALLVY Software Solutions" className="h-[40px] w-auto" />
-    </div>
-  );
-}
 
-function Footer({ isLoaded }: { isLoaded: boolean }) {
-  return (
-    <motion.div 
-      className="absolute box-border content-stretch flex flex-col gap-[10px] items-start left-1/2 px-[118px] py-[64px] top-[2800px] translate-x-[-50%] w-[1440px]" 
-      data-name="Footer"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: isLoaded ? 1 : 0 }}
-      transition={{ duration: 0.8, delay: 0.7, ease: "easeOut" }}
-    >
-      <div aria-hidden="true" className="absolute border-[1px_0px_0px] border-[rgba(255,255,255,0.1)] border-solid inset-0 pointer-events-none" />
-      <Group3 />
-      <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic relative shrink-0 text-[#717182] text-[14px] text-nowrap whitespace-pre">© 2025 ALLVY Software Pvt Ltd. All rights reserved.</p>
-      <div className="">
-      <p className="absolute font-['Arial:Regular',_sans-serif] leading-[24px] left-[538px]  not-italic text-[17px]  text-black top-[67.81px] ">Transforming RFP documents into structured data with AI-powered extraction.</p>
-      </div>
-    </motion.div>
-  );
-}
-
-function Group7() {
-  return (
-    <div className="relative shrink-0">
-      <img src={allvyLogo} alt="ALLVY Software Solutions" className="h-[50px] w-auto" />
-    </div>
-  );
-}
-
-function Nav({ isLoaded }: { isLoaded: boolean }) {
-  return (
-    <motion.div 
-      className="absolute box-border content-stretch flex flex-col items-center left-1/2 top-[33px] -translate-x-1/2" 
-      data-name="Nav"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : -20 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-    >
-      <Group7 />
-    </motion.div>
-  );
-}
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0); // Open first FAQ by default
   const [isPageLoaded, setIsPageLoaded] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [filename, setFilename] = useState<string>('rfp_analysis.xlsx');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Trigger page load animation
@@ -862,32 +798,83 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleUploadClick = () => {
-    if (isUploaded) {
+  const handleUploadClick = async () => {
+    const enableLogs = (import.meta.env.VITE_ENABLE_LOGS || '').toString().toLowerCase() === 'true' || import.meta.env.DEV;
+    const log = (...args: unknown[]) => {
+      if (enableLogs) {
+        const ts = new Date().toISOString();
+        // eslint-disable-next-line no-console
+        console.log(`[App ${ts}]`, ...args);
+      }
+    };
+
+    if (isUploaded && downloadUrl) {
       // Download functionality
-      console.log("Downloading Excel file...");
-      // In a real app, this would trigger a download
+      log('download:click', { filename, hasUrl: !!downloadUrl });
+      apiService.downloadFile(downloadUrl, filename);
       return;
     }
 
-    // Upload functionality
+    // 1) Ask user to select a file first
+    const file = await fileUploadHandler.selectFile();
+    if (!file) {
+      log('selectFile:cancel');
+      return; // user canceled; do nothing
+    }
+
+    // 2) Validate file before starting generation
+    const validation = apiService.validateFile(file);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid file');
+      log('validate:error', validation.error);
+      return;
+    }
+
+    // 3) Start generation only after a valid file is selected
     setIsLoading(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const result = await fileUploadHandler.uploadAndProcessFile(file, {
+        onProgress: (progress) => {
+          log('upload:progress', { progress });
+        },
+        onError: (errorMessage) => {
+          setError(errorMessage);
+          setIsLoading(false);
+          log('upload:onError', errorMessage);
+        },
+        onSuccess: (r) => {
+          log('upload:onSuccess', r);
+        }
+      });
+
+      if (result.success && result.downloadUrl && result.filename) {
+        setDownloadUrl(result.downloadUrl);
+        setFilename(result.filename);
+        setIsUploaded(true);
+        setIsLoading(false);
+      } else {
+        setError(result.error || 'Failed to process file');
+        setIsLoading(false);
+        log('upload:resultError', result.error);
+      }
+    } catch (error) {
+      log('upload:exception', error);
+      setError(error instanceof Error ? error.message : 'Upload failed');
       setIsLoading(false);
-      setIsUploaded(true);
-    }, 10000); // 10 second loading animation
+    }
   };
 
   return (
     <div className="bg-white relative size-full overflow-x-hidden" data-name="Desktop - 1">
-      <Frame1000002631 isLoaded={isPageLoaded} />
-      <Group13 isLoaded={isPageLoaded} />
-      <Frame3 isLoaded={isPageLoaded} />
-      <DivExtensionsSlideshowImgContainer3RllO 
+      <Hero isLoaded={isPageLoaded} />
+      <FileUploadSection 
         onUploadClick={handleUploadClick}
         isLoading={isLoading}
         isUploaded={isUploaded}
         isPageLoaded={isPageLoaded}
+        HeroSection={HeroSection}
       />
       <Frame1000002632 isLoaded={isPageLoaded} />
       <motion.div 
@@ -898,9 +885,14 @@ export default function App() {
       >
         <p className="leading-[40px]">Frequently Asked Questions</p>
       </motion.div>
-      <Group12 openFaq={openFaq} setOpenFaq={setOpenFaq} isLoaded={isPageLoaded} />
+      <FAQ openFaq={openFaq} setOpenFaq={setOpenFaq} isLoaded={isPageLoaded} />
       <Footer isLoaded={isPageLoaded} />
       <Nav isLoaded={isPageLoaded} />
+      
+      {/* Error Display */}
+      {error && (
+        <ErrorBanner error={error} onClose={() => setError(null)} />
+      )}
     </div>
   );
 }

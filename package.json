@@ -45,7 +45,8 @@
             "recharts": "^2.15.2",
             "sonner": "^2.0.3",
             "tailwind-merge": "*",
-            "vaul": "^1.1.2"
+            "vaul": "^1.1.2",
+            "serve": "^14.2.3"
       },
       "devDependencies": {
             "@types/node": "^20.10.0",
@@ -60,7 +61,7 @@
       },
       "scripts": {
             "dev": "vite --port 3000 --strictPort",
-            "start": "vite",
+            "start": "npm run build && serve -s dist -l tcp://0.0.0.0:${PORT:-8080}",
             "build": "vite build",
             "preview": "vite preview --port 3000 --strictPort",
             "typecheck": "tsc --noEmit"
