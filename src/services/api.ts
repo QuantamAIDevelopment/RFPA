@@ -16,7 +16,7 @@ class ApiService {
 
   constructor() {
     // Use environment variable or default to localhost:8000
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://192.168.100.120:8000';
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://allvy-rfp-pythonservice-ang2cfbna2dahmc8.centralindia-01.azurewebsites.net';
     this.enableLogs = (import.meta.env.VITE_ENABLE_LOGS || '').toString().toLowerCase() === 'true' || import.meta.env.DEV;
   }
 
@@ -39,11 +39,14 @@ class ApiService {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Cross-browser 30-minute timeout
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(new DOMException('Timeout', 'AbortError')), 30 * 60 * 1000);
+  // Cross-browser timeout (defaults to 1 hour). Can be overridden with VITE_API_TIMEOUT_MS (milliseconds).
+  const defaultTimeoutMs = 60 * 60 * 1000; // 1 hour
+  const timeoutMs = parseInt(String(import.meta.env.VITE_API_TIMEOUT_MS || ''), 10) || defaultTimeoutMs;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(new DOMException('Timeout', 'AbortError')), timeoutMs);
 
-      const endpoint = `${this.baseUrl}/process-rfp/`;
+  // Allow overriding the exact process endpoint via environment variable
+  const endpoint = import.meta.env.VITE_API_PROCESS_RFP_URL || `${this.baseUrl}/process-rfp/`;
       this.log('processRfp:request', { endpoint });
       const response = await fetch(endpoint, {
         method: 'POST',
